@@ -8,7 +8,15 @@ namespace SimpleConnection
 {
     public static class SqlCommanderExtension
     {
-        public static string ExecuteToJson(this IDbConnection cnn, string querySql, bool isStoredProcedure, object param = null)
+
+        public static bool Any(this IDbConnection cnn, string querySql, bool isStoredProcedure, object param = null)
+        {
+            ExecuteToJson(cnn, querySql, isStoredProcedure, param);
+            return false;
+        }
+
+
+        private static IDataReader CreateDataReader(IDbConnection cnn, string querySql, bool isStoredProcedure, object param = null)
         {
             var command = cnn.CreateCommand();
             command.CommandText = querySql;
@@ -19,11 +27,18 @@ namespace SimpleConnection
                 command.GenerateParameters(param);
 
             cnn.Open();
-            var result = "{}";
+            IDataReader result;
             using (var reader = command.ExecuteReader())
-                result = SerializeJson(reader);
-
+                result = reader;
             cnn.Close();
+
+            return result;
+        }
+
+        public static string ExecuteToJson(this IDbConnection cnn, string querySql, bool isStoredProcedure, object param = null)
+        {
+            var result = "{}";
+            result = SerializeJson(CreateDataReader(cnn, querySql, isStoredProcedure, param));
             return result;
         }
 
